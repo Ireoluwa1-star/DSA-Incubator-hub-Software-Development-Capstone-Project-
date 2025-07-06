@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Mentorship Platform - Real World Demo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { margin:0; font-family:sans-serif; background:#f5f8fc; }
+    main { max-width: 900px; margin: 2em auto; background:#fff; border-radius:16px; box-shadow:0 4px 32px #0002; padding:2em 2em 1em 2em;}
+    h1 { text-align:center; color: #0477bf; letter-spacing:1px; font-size:2.1em;}
+    nav { text-align:center; margin-bottom:2em;}
+    nav button { background: #0477bf; color: #fff; border:0; border-radius:7px; padding:0.6em 1.5em; font-weight:bold; font-size:1em; margin:0 0.5em; cursor:pointer;}
+    nav button.active, nav button:focus { background: #ffcb05; color: #0477bf; }
+    .hidden { display:none !important; }
+    .card { background:#f7fbfc; border:1px solid #e3e8ee; border-radius:9px; box-shadow:0 2px 10px #0001; padding:1em 1em 0.8em 1em; margin-bottom:1.2em;}
+    label { display:block; margin-bottom:0.3em; }
+    input, textarea, select { width:100%; padding:0.7em; margin-bottom:1em; border-radius:6px; border:1px solid #b2bec3; font-size:1em; background:#f7fbfc; box-sizing:border-box;}
+    textarea { min-height:3em; resize:vertical;}
+    .list { margin:0; padding:0;}
+    .item { background:#eef6fb; border-radius:8px; padding:0.7em 1em; margin-bottom:1em;}
+    .btn { padding:0.45em 1.2em; border:none; border-radius:6px; cursor:pointer; font-size:1em; background:#0477bf; color:#fff;}
+    .btn-secondary { background:#ffcb05; color:#0477bf; font-weight:bold;}
+    .error { color:#e74c3c; font-weight:bold;}
+    .success { color:#219150; font-weight:bold;}
+    .avatar { width:42px; height:42px; border-radius:21px; vertical-align:middle; margin-right:8px; object-fit:cover;}
+    .notifbar { background:#ffcb05; color:#0477bf; border-radius:8px; padding:0.5em 1em; margin-bottom:1.1em;}
+    .progress-bar { background: #e3e8ee; height: 30px; border-radius: 16px; overflow: hidden; margin: 1em 0 1em 0; box-shadow: 0 1px 2px #ccc7; }
+    .progress-fill { background: #0477bf; height: 100%; color: #fff; text-align: center; font-size: 1em; line-height: 30px; border-radius: 16px 0 0 16px; transition: width 0.4s; font-weight: bold; letter-spacing: 1px; }
+    @media (max-width: 700px) { main { padding:1em 0.4em; } }
+    @media (max-width: 500px) { body, main { font-size:15px; } }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Mentorship Platform</h1>
+  <nav>
+    <button id="loginTab" class="active" onclick="switchView('login')">Login</button>
+    <button id="registerTab" onclick="switchView('register')">Register</button>
+    <button id="adminTab" class="hidden" onclick="switchView('admin')">Admin</button>
+    <button id="mentorTab" class="hidden" onclick="switchView('mentor')">Mentor</button>
+    <button id="menteeTab" class="hidden" onclick="switchView('mentee')">Mentee</button>
+    <button id="logoutBtn" class="hidden" style="background:#e74c3c;" onclick="logout()">Logout</button>
+  </nav>
+  <!-- LOGIN -->
+  <section id="loginSection">
+    <form id="loginForm" autocomplete="off">
+      <label>Email: <input required type="email" id="loginEmail" /></label>
+      <label>Password: <input required type="password" id="loginPassword" /></label>
+      <button type="submit" class="btn">Login</button>
+    </form>
+    <div id="loginError" class="error"></div>
+  </section>
+  <!-- REGISTER -->
+  <section id="registerSection" class="hidden">
+    <form id="registerForm" autocomplete="off">
+      <label>Name: <input required id="regName" /></label>
+      <label>Email: <input required type="email" id="regEmail" /></label>
+      <label>Password: <input required type="password" id="regPassword" /></label>
+      <label>
+        Role:
+        <select required id="regRole">
+          <option value="">Select...</option>
+          <option value="admin">Admin</option>
+          <option value="mentor">Mentor</option>
+          <option value="mentee">Mentee</option>
+        </select>
+      </label>
+      <label>Bio: <textarea id="regBio"></textarea></label>
+      <label>Goals: <input id="regGoals" /></label>
+      <label>Skills: <input id="regSkills" placeholder="e.g. Coding, UI/UX, Marketing" /></label>
+      <label>Profile Photo:
+        <input type="file" accept="image/*" id="regAvatarInput" onchange="onAvatarChange(event,'reg')" />
+      </label>
+      <img id="regAvatarPreview" src="" alt="Avatar Preview" class="avatar" style="display:none;margin-bottom:1em;">
+      <button type="submit" class="btn">Register</button>
+    </form>
+    <div id="registerError" class="error"></div>
+    <div id="registerSuccess" class="success"></div>
+  </section>
+  <!-- ADMIN DASHBOARD -->
+  <section id="adminSection" class="hidden">
+    <div class="notifbar" id="adminNotifbar" style="display:none;"></div>
+    <div class="card"><b>Welcome, <span id="adminName"></span>! (Admin)</b></div>
+    <div class="card">
+      <h3>All Users</h3>
+      <ul id="adminUsers" class="list"></ul>
+    </div>
+    <div class="card">
+      <h3>All Matches</h3>
+      <ul id="adminMatches" class="list"></ul>
+    </div>
+    <div class="card">
+      <h3>All Sessions</h3>
+      <ul id="adminSessions" class="list"></ul>
+    </div>
+    <div class="card">
+      <h3>Assign Role</h3>
+      <form id="adminAssignRoleForm">
+        <label>User Email: <input type="email" id="adminAssignEmail" required /></label>
+        <label>Role:
+          <select id="adminAssignRole" required>
+            <option value="">Select...</option>
+            <option value="admin">Admin</option>
+            <option value="mentor">Mentor</option>
+            <option value="mentee">Mentee</option>
+          </select>
+        </label>
+        <button class="btn btn-secondary" type="submit">Assign Role</button>
+      </form>
+      <div id="adminAssignResult"></div>
+    </div>
+  </section>
+  <!-- MENTOR DASHBOARD -->
+  <section id="mentorSection" class="hidden">
+    <div class="notifbar" id="mentorNotifbar" style="display:none;"></div>
+    <div class="card"><b>Welcome, <img id="mentorAvatar" class="avatar" src="" style="display:none;"><span id="mentorName"></span>! (Mentor)</b></div>
+    <div class="card">
+      <h3>Edit Profile</h3>
+      <form id="mentorProfileForm">
+        <label>Name: <input id="mentorProfileName" /></label>
+        <label>Bio: <textarea id="mentorProfileBio"></textarea></label>
+        <label>Skills: <input id="mentorProfileSkills" /></label>
+        <label>Goals: <input id="mentorProfileGoals" /></label>
+        <label>Profile Photo:
+          <input type="file" accept="image/*" id="mentorAvatarInput" onchange="onAvatarChange(event,'mentor')" />
+        </label>
+        <img id="mentorAvatarPreview" class="avatar" src="" style="display:none;">
+        <button type="submit" class="btn btn-secondary">Save Profile</button>
+      </form>
+    </div>
+    <div class="card">
+      <h3>Your Availability</h3>
+      <form id="mentorAvailabilityForm">
+        <label>Available Day:
+          <select id="mentorAvailDay">
+            <option>Monday</option><option>Tuesday</option><option>Wednesday</option>
+            <option>Thursday</option><option>Friday</option><option>Saturday</option><option>Sunday</option>
+          </select>
+        </label>
+        <label>From: <input type="time" id="mentorAvailFrom" /></label>
+        <label>To: <input type="time" id="mentorAvailTo" /></label>
+        <button type="submit" class="btn btn-secondary">Add Availability</button>
+      </form>
+      <ul id="mentorAvailList" class="list"></ul>
+    </div>
+    <div class="card">
+      <h3>Requests from Mentees</h3>
+      <ul id="mentorRequests" class="list"></ul>
+    </div>
+    <div class="card">
+      <h3>Your Sessions</h3>
+      <ul id="mentorSessions" class="list"></ul>
+    </div>
+  </section>
+  <!-- MENTEE DASHBOARD -->
+  <section id="menteeSection" class="hidden">
+    <div class="notifbar" id="menteeNotifbar" style="display:none;"></div>
+    <div class="card"><b>Welcome, <img id="menteeAvatar" class="avatar" src="" style="display:none;"><span id="menteeName"></span>! (Mentee)</b></div>
+    <div class="card">
+      <h3>Edit Profile</h3>
+      <form id="menteeProfileForm">
+        <label>Name: <input id="menteeProfileName" /></label>
+        <label>Bio: <textarea id="menteeProfileBio"></textarea></label>
+        <label>Skills: <input id="menteeProfileSkills" /></label>
+        <label>Goals: <input id="menteeProfileGoals" /></label>
+        <label>Profile Photo:
+          <input type="file" accept="image/*" id="menteeAvatarInput" onchange="onAvatarChange(event,'mentee')" />
+        </label>
+        <img id="menteeAvatarPreview" class="avatar" src="" style="display:none;">
+        <button type="submit" class="btn btn-secondary">Save Profile</button>
+      </form>
+    </div>
+    <div class="card">
+      <h3>Mentor Directory</h3>
+      <div>
+        <label>Skill Filter: <input id="menteeSkillFilter" placeholder="e.g. UI/UX" /></label>
+        <button class="btn btn-secondary" onclick="renderMentorList()">Filter</button>
+      </div>
+      <ul id="menteeMentorList" class="list"></ul>
+    </div>
+    <div class="card">
+      <h3>My Requests</h3>
+      <ul id="menteeRequests" class="list"></ul>
+    </div>
+    <div class="card">
+      <h3>My Sessions</h3>
+      <ul id="menteeSessions" class="list"></ul>
+    </div>
+    <div class="card">
+      <h3>Lesson Tracker (Digital SkillUp Africa)</h3>
+      <div class="progress-bar">
+        <div id="menteeProgressFill" class="progress-fill" style="width:0%">0% Complete</div>
+      </div>
+      <ul id="menteeLessonList" class="list"></ul>
+    </div>
+  </section>
+</main>
+<script>
+// --- Data ---
+let users = [
+  // Admins (2)
+  { id: "u1", name: "Chidi Admin", email: "chidi@admin.com", password: "adminpass", role: "admin", bio: "Incubator manager.", goals: "", skills: ["Management"], availability: [], lessons: [], notifications: [], avatar: "" },
+  { id: "u6", name: "Blessing Admin", email: "blessing@admin.com", password: "adminpass2", role: "admin", bio: "Community admin.", goals: "", skills: ["Organisation"], availability: [], lessons: [], notifications: [], avatar: "" },
+  // Mentors (3)
+  { id: "u2", name: "Adebayo Mentor", email: "adebayo@mentor.com", password: "pass123", role: "mentor", bio: "Expert in digital marketing.", goals: "Empower youth in marketing.", skills: ["Marketing", "SEO"], availability: [{day:"Monday",from:"09:00",to:"11:00"},{day:"Wednesday",from:"14:00",to:"16:00"}], lessons: [], notifications: [], avatar: "" },
+  { id: "u3", name: "Ngozi Mentor", email: "ngozi@mentor.com", password: "pass234", role: "mentor", bio: "UI/UX specialist.", goals: "Inspire UI/UX designers.", skills: ["UI/UX", "Design"], availability: [{day:"Tuesday",from:"10:00",to:"12:00"}], lessons: [], notifications: [], avatar: "" },
+  { id: "u7", name: "Samson Mentor", email: "samson@mentor.com", password: "pass345", role: "mentor", bio: "Fullstack web developer.", goals: "Grow African dev talent.", skills: ["JavaScript", "React", "Node.js"], availability: [{day:"Friday",from:"15:00",to:"17:00"}], lessons: [], notifications: [], avatar: "" },
+  // Mentees (3)
+  { id: "u4", name: "Fatima Mentee", email: "fatima@mentee.com", password: "pass456", role: "mentee", bio: "Aspiring data analyst.", goals: "Learn data science.", skills: ["Excel"], availability: [], lessons: [], notifications: [], avatar: "" },
+  { id: "u5", name: "Tunde Mentee", email: "tunde@mentee.com", password: "pass567", role: "mentee", bio: "Wants to improve coding.", goals: "Become a frontend developer.", skills: ["HTML","CSS"], availability: [], lessons: [], notifications: [], avatar: "" },
+  { id: "u8", name: "Grace Mentee", email: "grace@mentee.com", password: "pass678", role: "mentee", bio: "Future entrepreneur.", goals: "Build a digital startup.", skills: ["Social Media"], availability: [], lessons: [], notifications: [], avatar: "" }
+];
+let requests = [
+  { id: "r1", menteeId: "u4", mentorId: "u2", status: "pending" },
+  { id: "r2", menteeId: "u5", mentorId: "u3", status: "accepted" }
+];
+let sessions = [
+  { id: "s1", mentorId: "u2", menteeId: "u4", day: "Monday", from: "09:00", to: "09:30", feedback: { mentee: "Very helpful!", rating: 5, mentor: "Fatima was engaged." } },
+  { id: "s2", mentorId: "u3", menteeId: "u5", day: "Tuesday", from: "10:00", to: "10:30", feedback: {} }
+];
+let lessons = [
+  {id:1, title:"Introduction to Digital Skills", category:"Digital Literacy"},
+  {id:2, title:"Basic Computer Literacy", category:"Digital Literacy"},
+  {id:3, title:"Internet Safety & Cybersecurity", category:"Security"},
+  {id:4, title:"Microsoft Office Suite", category:"Productivity"},
+  {id:5, title:"Social Media Management", category:"Marketing"},
+  {id:6, title:"Graphic Design Fundamentals", category:"Design"},
+  {id:7, title:"Web Development Basics", category:"Web Development"},
+  {id:8, title:"Introduction to Coding", category:"Programming"},
+  {id:9, title:"Entrepreneurship & Digital Marketing", category:"Business"},
+  {id:10, title:"Data Analysis & Spreadsheets", category:"Data"},
+  {id:11, title:"Cloud Computing Essentials", category:"IT Infrastructure"},
+  {id:12, title:"Mobile App Basics", category:"Mobile Development"},
+  {id:13, title:"SEO Fundamentals", category:"Marketing"},
+  {id:14, title:"Personal Branding Online", category:"Digital Literacy"},
+  {id:15, title:"Python for Beginners", category:"Programming"},
+  {id:16, title:"Remote Work Best Practices", category:"Productivity"},
+  {id:17, title:"Customer Support Skills", category:"Business"},
+  {id:18, title:"Intro to Data Science", category:"Data"},
+  {id:19, title:"Digital Content Creation", category:"Marketing"},
+  {id:20, title:"Critical Thinking in the Digital Age", category:"Digital Literacy"}
+];
+for(let i=21;i<=40;i++){
+  lessons.push({ id: i, title: "Lesson "+i, category: "Category "+((i%10)+1) });
+}
+let lessonCompletion = {
+  "u4": [1,3,5,8,15,22,25],
+  "u5": [2,4,6,10,12,14,15,18,19,27,33,41],
+  "u8": [1,2,3,4]
+};
+let session = null;
+let regAvatarData = "";
+// --- Navigation ---
+function switchView(view) {
+  ["login","register","admin","mentor","mentee"].forEach(r=>{
+    document.getElementById(r+"Section").classList.add("hidden");
+    document.getElementById(r+"Tab").classList.remove("active");
+  });
+  document.getElementById(view+"Section").classList.remove("hidden");
+  document.getElementById(view+"Tab").classList.add("active");
+  document.getElementById("logoutBtn").classList.toggle("hidden", view==="login" || view==="register");
+  document.getElementById("adminTab").classList.toggle("hidden", !session || session.role!=="admin");
+  document.getElementById("mentorTab").classList.toggle("hidden", !session || session.role!=="mentor");
+  document.getElementById("menteeTab").classList.toggle("hidden", !session || session.role!=="mentee");
+}
+// --- Avatar ---
+function onAvatarChange(e, type) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(evt) {
+    if(type==="reg") {
+      regAvatarData = evt.target.result;
+      regAvatarPreview.src = regAvatarData;
+      regAvatarPreview.style.display = "inline-block";
+    } else if (type==="mentor") {
+      mentorAvatarPreview.src = evt.target.result;
+      mentorAvatarPreview.style.display = "inline-block";
+      session.avatar = evt.target.result;
+      let user = users.find(u=>u.id===session.id);
+      user.avatar = evt.target.result;
+      renderMentor();
+    } else if (type==="mentee") {
+      menteeAvatarPreview.src = evt.target.result;
+      menteeAvatarPreview.style.display = "inline-block";
+      session.avatar = evt.target.result;
+      let user = users.find(u=>u.id===session.id);
+      user.avatar = evt.target.result;
+      renderMentee();
+    }
+  };
+  reader.readAsDataURL(file);
+}
+// --- Auth ---
+document.getElementById("registerForm").onsubmit = function(e){
+  e.preventDefault();
+  registerError.textContent = "";
+  registerSuccess.textContent = "";
+  const name=regName.value.trim(), email=regEmail.value.trim().toLowerCase(), password=regPassword.value, role=regRole.value;
+  const bio=regBio.value, goals=regGoals.value, skills=regSkills.value.split(",").map(s=>s.trim()).filter(Boolean);
+  if(!name || !email || !password || !role) return registerError.textContent="All fields are required.";
+  if(users.some(u=>u.email===email)) return registerError.textContent="Email already exists.";
+  const id = Date.now().toString(36)+Math.random().toString(36).slice(2);
+  users.push({id, name, email, password, role, bio, goals, skills, availability:[], lessons:[], notifications:[], avatar: regAvatarData || ""});
+  registerSuccess.textContent="Registration successful! Please login.";
+  registerForm.reset();
+  regAvatarPreview.src = "";
+  regAvatarPreview.style.display = "none";
+  regAvatarData = "";
+  setTimeout(()=>{switchView("login");registerSuccess.textContent="";}, 1300);
+};
+document.getElementById("loginForm").onsubmit = function(e){
+  e.preventDefault();
+  loginError.textContent = "";
+  const email=loginEmail.value.trim().toLowerCase(), password=loginPassword.value;
+  const user = users.find(u=>u.email===email && u.password===password);
+  if(!user) return loginError.textContent="Invalid credentials.";
+  session = {...user};
+  loginError.textContent="";
+  if(session.role==="admin") { switchView("admin"); renderAdmin(); }
+  else if(session.role==="mentor") { switchView("mentor"); renderMentor(); }
+  else { switchView("mentee"); renderMentee(); }
+};
+function logout() { session = null; switchView('login'); }
+// --- Notifications ---
+function notify(userId, message) {
+  let user = users.find(u=>u.id===userId);
+  if (!user) return;
+  user.notifications = user.notifications || [];
+  user.notifications.push(message);
+  if (session && session.id === userId) session.notifications = user.notifications;
+}
+function showNotifications(role) {
+  let notifbar = document.getElementById(role+"Notifbar");
+  if (!session || !session.notifications || session.notifications.length === 0) {
+    notifbar.style.display = "none";
+    notifbar.innerHTML = "";
+    return;
+  }
+  notifbar.style.display = "block";
+  notifbar.innerHTML = session.notifications.map((n,i)=>
+    `<span>${n}</span> <button class="btn btn-secondary" style="padding:0.1em 0.7em" onclick="dismissNotification(${i})">Dismiss</button>`
+  ).join("<br>");
+}
+function dismissNotification(idx) {
+  session.notifications.splice(idx, 1);
+  let user = users.find(u=>u.id===session.id);
+  user.notifications = session.notifications;
+  if(session.role==="admin") showNotifications("admin");
+  if(session.role==="mentor") showNotifications("mentor");
+  if(session.role==="mentee") showNotifications("mentee");
+}
+// --- Admin
+function renderAdmin() {
+  adminName.textContent = session.name;
+  showNotifications("admin");
+  adminUsers.innerHTML = users.map(u=>
+    `<li>
+      <img src="${u.avatar||('https://ui-avatars.com/api/?name='+encodeURIComponent(u.name))}" class="avatar">
+      <b>${u.name}</b> (${u.role}) — ${u.email}<br>
+      Skills: ${u.skills.join(", ")}<br>Bio: ${u.bio}
+    </li>`
+  ).join("");
+  adminMatches.innerHTML = requests.map(r=>{
+    const mentee = users.find(u=>u.id===r.menteeId), mentor = users.find(u=>u.id===r.mentorId);
+    return `<li>${mentee?.name||""} ⇄ ${mentor?.name||""} <b>(${r.status})</b></li>`;
+  }).join("") || "<li>No matches yet.</li>";
+  adminSessions.innerHTML = sessions.map(s=>{
+    const mentee = users.find(u=>u.id===s.menteeId), mentor = users.find(u=>u.id===s.mentorId);
+    return `<li>${mentee?.name||""} ⇄ ${mentor?.name||""} : ${s.day} ${s.from}-${s.to}</li>`;
+  }).join("") || "<li>No sessions yet.</li>";
+  adminAssignResult.textContent = "";
+}
+adminAssignRoleForm.onsubmit = function(e){
+  e.preventDefault();
+  const email = adminAssignEmail.value.trim().toLowerCase();
+  const role = adminAssignRole.value;
+  const user = users.find(u=>u.email===email);
+  if(!user) return adminAssignResult.textContent = "User not found.";
+  user.role = role;
+  adminAssignResult.textContent = `${user.name}'s role updated to ${role}.`;
+  renderAdmin();
+};
+// --- Mentor
+function renderMentor() {
+  mentorName.textContent = session.name;
+  showNotifications("mentor");
+  mentorAvatar.src = session.avatar || 'https://ui-avatars.com/api/?name='+encodeURIComponent(session.name);
+  mentorAvatar.style.display = "inline-block";
+  mentorAvatarPreview.src = session.avatar || "";
+  mentorAvatarPreview.style.display = session.avatar ? "inline-block" : "none";
+  mentorProfileName.value = session.name;
+  mentorProfileBio.value = session.bio || "";
+  mentorProfileSkills.value = session.skills ? session.skills.join(", ") : "";
+  mentorProfileGoals.value = session.goals || "";
+  mentorAvailList.innerHTML = session.availability.map(a=>
+    `<li>${a.day}: ${a.from} - ${a.to}</li>`
+  ).join("") || "<li>No availability set yet.</li>";
+  mentorRequests.innerHTML = requests.filter(r=>r.mentorId===session.id)
+    .map(r=>{
+      const mentee = users.find(u=>u.id===r.menteeId);
+      return `<li>
+        <img src="${mentee.avatar||('https://ui-avatars.com/api/?name='+encodeURIComponent(mentee.name))}" class="avatar">
+        <b>${mentee?.name||""}</b> - <b>${r.status}</b> 
+        ${r.status==="pending"?`<button class="btn btn-secondary" onclick="acceptRequest('${r.id}')">Accept</button>
+        <button class="btn btn-secondary" onclick="rejectRequest('${r.id}')">Reject</button>`:""}
+      </li>`;
+    }).join("") || "<li>No requests yet.</li>";
+  mentorSessions.innerHTML = sessions.filter(s=>s.mentorId===session.id)
+    .map(s=>{
+      const mentee = users.find(u=>u.id===s.menteeId);
+      return `<li>With <b>${mentee?.name||""}</b> - ${s.day} ${s.from} to ${s.to}
+        <br>Feedback: ${s.feedback?.mentee?'Mentee: '+s.feedback.mentee+' (⭐'+(s.feedback.rating||'')+')':''} 
+        ${s.feedback?.mentor?' Mentor: '+s.feedback.mentor:''}
+      </li>`;
+    }).join("") || "<li>No sessions yet.</li>";
+}
+mentorAvailabilityForm.onsubmit = function(e){
+  e.preventDefault();
+  const day=mentorAvailDay.value, from=mentorAvailFrom.value, to=mentorAvailTo.value;
+  const user = users.find(u=>u.id===session.id);
+  user.availability.push({day,from,to});
+  session.availability = user.availability;
+  renderMentor();
+};
+window.acceptRequest = function(id){
+  const req = requests.find(r=>r.id===id);
+  req.status="accepted";
+  notify(req.menteeId, `Your mentorship request was accepted by ${session.name}.`);
+  renderMentor();
+  renderAdmin();
+};
+window.rejectRequest = function(id){
+  const req = requests.find(r=>r.id===id);
+  req.status="rejected";
+  notify(req.menteeId, `Your mentorship request was rejected by ${session.name}.`);
+  renderMentor();
+  renderAdmin();
+};
+mentorProfileForm.onsubmit = function(e){
+  e.preventDefault();
+  const user = users.find(u=>u.id===session.id);
+  user.name = mentorProfileName.value;
+  user.bio = mentorProfileBio.value;
+  user.skills = mentorProfileSkills.value.split(",").map(s=>s.trim()).filter(Boolean);
+  user.goals = mentorProfileGoals.value;
+  user.avatar = session.avatar;
+  session = {...user};
+  renderMentor();
+};
+// --- Mentee
+function renderMentorList(){
+  const skill = menteeSkillFilter.value.toLowerCase();
+  const mentors = users.filter(u=>u.role==="mentor" && (!skill || u.skills.some(s=>s.toLowerCase().includes(skill))));
+  menteeMentorList.innerHTML = mentors.map(m=>
+    `<li>
+      <img src="${m.avatar || 'https://ui-avatars.com/api/?name='+encodeURIComponent(m.name)}" class="avatar">
+      <b>${m.name}</b> — Skills: ${m.skills.join(", ")}<br>
+      <button class="btn btn-secondary" onclick="sendRequest('${m.id}')"
+        ${requests.some(r=>r.menteeId===session.id && r.mentorId===m.id)?"disabled":""}>
+        ${requests.some(r=>r.menteeId===session.id && r.mentorId===m.id)?"Requested":"Request Mentorship"}
+      </button>
+    </li>`
+  ).join("") || "<li>No mentors found.</li>";
+}
+window.renderMentorList = renderMentorList;
+window.sendRequest = function(mentorId){
+  if(requests.some(r=>r.menteeId===session.id && r.mentorId===mentorId))return;
+  requests.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2), menteeId:session.id, mentorId, status:"pending"});
+  notify(mentorId, "You have a new mentorship request.");
+  renderMentorList(); renderMentee();
+};
+function renderMentee(){
+  menteeName.textContent = session.name;
+  showNotifications("mentee");
+  menteeAvatar.src = session.avatar || 'https://ui-avatars.com/api/?name='+encodeURIComponent(session.name);
+  menteeAvatar.style.display = "inline-block";
+  menteeAvatarPreview.src = session.avatar || "";
+  menteeAvatarPreview.style.display = session.avatar ? "inline-block" : "none";
+  menteeProfileName.value = session.name;
+  menteeProfileBio.value = session.bio || "";
+  menteeProfileSkills.value = session.skills ? session.skills.join(", ") : "";
+  menteeProfileGoals.value = session.goals || "";
+  renderMentorList();
+  menteeRequests.innerHTML = requests.filter(r=>r.menteeId===session.id)
+    .map(r=>{
+      const mentor = users.find(u=>u.id===r.mentorId);
+      return `<li>To <b>${mentor?.name||""}</b> - <b>${r.status}</b></li>`;
+    }).join("") || "<li>No requests sent yet.</li>";
+  menteeSessions.innerHTML = sessions.filter(s=>s.menteeId===session.id)
+    .map(s=>{
+      const mentor = users.find(u=>u.id===s.mentorId);
+      return `<li>With <b>${mentor?.name||""}</b> - ${s.day} ${s.from} to ${s.to}
+        <br>Feedback: ${s.feedback?.mentee?'You: '+s.feedback.mentee+' (⭐'+(s.feedback.rating||'')+')':''} 
+        ${s.feedback?.mentor?' Mentor: '+s.feedback.mentor:''}
+        ${!s.feedback?.mentee?`<button class="btn" onclick="showFeedbackForm('${s.id}')">Leave Feedback</button>`:""}
+      </li>`;
+    }).join("") || "<li>No sessions yet.</li>";
+  // Lesson tracker
+  const completed = (lessonCompletion[session.id]||[]);
+  let percent = lessons.length ? Math.round(completed.length/lessons.length*100) : 0;
+  menteeProgressFill.style.width = percent + "%";
+  menteeProgressFill.textContent = percent + "% Complete";
+  menteeLessonList.innerHTML = lessons.map(l=>
+    `<li>
+      <b>${l.title}</b> <i>[${l.category}]</i>
+      <button class="btn btn-secondary" onclick="markLesson(${l.id})" ${completed.includes(l.id)?"disabled":""}>
+        ${completed.includes(l.id)?"Completed":"Mark Complete"}
+      </button>
+    </li>`
+  ).join("");
+}
+window.markLesson = function(id){
+  lessonCompletion[session.id]=lessonCompletion[session.id]||[];
+  if(!lessonCompletion[session.id].includes(id)) lessonCompletion[session.id].push(id);
+  renderMentee();
+};
+menteeProfileForm.onsubmit = function(e){
+  e.preventDefault();
+  const user = users.find(u=>u.id===session.id);
+  user.name = menteeProfileName.value;
+  user.bio = menteeProfileBio.value;
+  user.skills = menteeProfileSkills.value.split(",").map(s=>s.trim()).filter(Boolean);
+  user.goals = menteeProfileGoals.value;
+  user.avatar = session.avatar;
+  session = {...user};
+  renderMentee();
+};
+// --- Feedback
+window.showFeedbackForm = function(sessionId){
+  const fb = prompt("Rate this session (1-5 stars), then leave a comment (e.g. 5: Great session!)");
+  if(!fb)return;
+  const match = fb.match(/^([1-5])\s*:(.*)$/);
+  if(!match)return alert("Format: 5: Your comment");
+  const [_, rating, comment]=match;
+  const s = sessions.find(s=>s.id===sessionId);
+  s.feedback = s.feedback||{};
+  s.feedback.mentee = comment.trim();
+  s.feedback.rating = rating;
+  renderMentee();
+  renderMentor();
+};
+// --- Scheduling
+setInterval(()=>{
+  requests.filter(r=>r.status==="accepted").forEach(r=>{
+    if(!sessions.some(s=>s.menteeId===r.menteeId && s.mentorId===r.mentorId)){
+      const mentor = users.find(u=>u.id===r.mentorId);
+      if(mentor && mentor.availability.length){
+        const a = mentor.availability[0];
+        sessions.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2), mentorId:mentor.id, menteeId:r.menteeId, day:a.day, from:a.from, to:a.to, feedback:{}});
+        renderMentor();
+        renderMentee();
+        renderAdmin();
+      }
+    }
+  });
+}, 1800);
+// --- Init
+switchView("login");
+</script>
+</body>
+</html>
